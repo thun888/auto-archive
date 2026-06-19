@@ -17,15 +17,12 @@ jobs:
         include:
           - os: windows-latest
             artifact_name: auto-archive-windows
-            binary: auto-archive.exe
             nuitka_args: "--windows-console-mode=attach"
           - os: ubuntu-latest
             artifact_name: auto-archive-linux
-            binary: auto-archive
             nuitka_args: ""
           - os: macos-latest
             artifact_name: auto-archive-macos
-            binary: auto-archive
             nuitka_args: ""
 
     runs-on: ${{ matrix.os }}
@@ -46,17 +43,22 @@ jobs:
         run: >
           python -m nuitka
           --standalone
-          --onefile
-          --output-filename=${{ matrix.binary }}
+          --output-dir=dist
+          --output-filename=auto-archive
           --assume-yes-for-downloads
           ${{ matrix.nuitka_args }}
           auto_archive.py
+
+      - name: Package
+        run: |
+          cd dist/auto_archive.dist
+          7z a -tzip ../../auto-archive-${{ matrix.os }}.zip .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.binary }}
+          path: auto-archive-${{ matrix.os }}.zip
 
   release:
     needs: build
@@ -73,6 +75,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/auto-archive-windows/auto-archive.exe
-            artifacts/auto-archive-linux/auto-archive
-            artifacts/auto-archive-macos/auto-archive
+            artifacts/auto-archive-windows/auto-archive-windows-latest.zip
+            artifacts/auto-archive-linux/auto-archive-ubuntu-latest.zip
+            artifacts/auto-archive-macos/auto-archive-macos-latest.zip

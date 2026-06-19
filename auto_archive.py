@@ -47,7 +47,7 @@ def load_config(config_path: str = "config.yaml") -> dict:
 # 日志
 # ---------------------------------------------------------------------------
 
-def setup_logging(cfg: dict):
+def setup_logging(cfg: dict, log_file: str = None):
     """根据配置初始化 loguru 日志。"""
     # 移除默认的 stderr handler
     logger.remove()
@@ -59,11 +59,11 @@ def setup_logging(cfg: dict):
         level="INFO",
     )
 
-    # 文件输出
-    if cfg.get("log_enabled", True):
-        log_file = cfg.get("log_file", "archive.log")
+    # 文件输出: 命令行参数优先，其次配置文件
+    file_path = log_file or (cfg.get("log_file") if cfg.get("log_enabled", True) else None)
+    if file_path:
         logger.add(
-            log_file,
+            file_path,
             format="{time:YYYY-MM-DD HH:mm:ss}  {message}",
             level="INFO",
             encoding="utf-8",
@@ -225,6 +225,12 @@ def parse_args():
         help="指定配置文件路径",
         metavar="FILE",
     )
+    parser.add_argument(
+        "-l", "--log-file",
+        default=None,
+        help="指定日志输出文件路径（不指定则仅输出到控制台）",
+        metavar="FILE",
+    )
     return parser.parse_args()
 
 
@@ -232,7 +238,7 @@ def main():
     args = parse_args()
     config_path = args.config
     cfg = load_config(config_path)
-    setup_logging(cfg)
+    setup_logging(cfg, log_file=args.log_file)
 
     logger.info(f"自动归档启动，配置文件: {Path(config_path).resolve()}")
     logger.info(f"共 {len(cfg['groups'])} 组任务待执行。")
