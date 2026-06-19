@@ -48,7 +48,6 @@ jobs:
           --standalone
           --onefile
           --output-filename=${{ matrix.binary }}
-          --include-data-file=config.yaml=config.yaml
           --assume-yes-for-downloads
           ${{ matrix.nuitka_args }}
           auto_archive.py

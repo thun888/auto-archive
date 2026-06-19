@@ -221,8 +221,8 @@ def parse_args():
     )
     parser.add_argument(
         "-c", "--config",
-        default="config.yaml",
-        help="指定配置文件路径（默认: config.yaml）",
+        required=True,
+        help="指定配置文件路径",
         metavar="FILE",
     )
     return parser.parse_args()
