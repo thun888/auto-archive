@@ -4,6 +4,7 @@
 支持多组归档任务，配置通过 config.yaml 管理。
 """
 
+import argparse
 import os
 import sys
 import shutil
@@ -213,14 +214,28 @@ def run_sync(group: dict, cfg: dict):
 # 主入口
 # ---------------------------------------------------------------------------
 
+def parse_args():
+    """解析命令行参数。"""
+    parser = argparse.ArgumentParser(
+        description="自动文件归档工具：根据文件创建时间，自动将源文件夹中的文件移动到 年份-月份 归档目录。",
+    )
+    parser.add_argument(
+        "-c", "--config",
+        default="config.yaml",
+        help="指定配置文件路径（默认: config.yaml）",
+        metavar="FILE",
+    )
+    return parser.parse_args()
+
+
 def main():
-    # 支持通过命令行参数指定配置文件路径
-    config_path = sys.argv[1] if len(sys.argv) > 1 else "config.yaml"
+    args = parse_args()
+    config_path = args.config
     cfg = load_config(config_path)
     setup_logging(cfg)
 
     logger.info(f"自动归档启动，配置文件: {Path(config_path).resolve()}")
-    logger.info(f"共 {len(cfg['groups'])} 组任务待执行。\n")
+    logger.info(f"共 {len(cfg['groups'])} 组任务待执行。")
 
     total_moved = 0
     for group in cfg["groups"]:
@@ -228,7 +243,7 @@ def main():
         run_sync(group, cfg)
         logger.info("")  # 空行分隔
 
-    logger.info(f"全部完成，共移动 {total_moved} 个文件。")
+    logger.info(f"全部完成，共移动 {total_moved} 个文件。\n")
 
 
 if __name__ == "__main__":
