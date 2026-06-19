@@ -1,0 +1,24 @@
+# 自动归档配置
+# 每组任务独立配置源文件夹和归档根目录
+
+groups:
+    # 归档完成后自动同步，支持的占位符:
+    #   {archive_root} — 归档根目录路径
+    #   {name}         — 组名
+    #   {folder}       — 月份文件夹名 (如 2026-06)
+  - name: "截图归档"
+    source_folder: "D:\\截图归档\\raw"
+    archive_root: "D:\\截图归档"
+    sync_command: "rclone copy {archive_root}/{folder} s3:/archive-bucket/{name}/{folder}"
+
+# ---- 全局设置 ----
+
+# 文件夹命名格式（Python strftime 语法）
+folder_format: "%Y-%m"
+
+# 是否递归扫描源文件夹中的子目录
+scan_subfolders: false
+
+# 是否启用日志
+log_enabled: true
+log_file: "archive.log"
