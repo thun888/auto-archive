@@ -13,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 import yaml
+import requests
 from loguru import logger
 
 
@@ -144,7 +145,8 @@ def archive_group(group: dict, cfg: dict) -> int:
             month_dir = dst_root / create_time.strftime(folder_fmt)
             month_dir.mkdir(parents=True, exist_ok=True)
 
-            target = get_unique_path(month_dir / fp.name)
+            target = get_unique_path(month_dir / fp.relative_to(src))
+            target.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(fp), str(target))
             moved += 1
             logger.info(f"[移动] {fp.name} -> {target.relative_to(dst_root)}")
@@ -167,8 +169,8 @@ def run_sync(group: dict, cfg: dict):
       {name}         — 组名
       {folder}       — 月份文件夹名 (如 2026-06)
     """
-    sync_tpl = group.get("sync_command")
-    if not sync_tpl:
+    sync_tpls = group.get("sync_command")
+    if not sync_tpls:
         return
 
     name = group["name"]
@@ -190,24 +192,25 @@ def run_sync(group: dict, cfg: dict):
             logger.info(f"[同步] 跳过 {name}/{folder}，目录不存在。")
             continue
 
-        cmd = sync_tpl.format(
-            archive_root=archive_root,
-            name=name,
-            folder=folder,
-        )
-        logger.info(f"[同步] {name}/{folder}: {cmd}")
-        try:
-            result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True, timeout=300
+        for sync_tpl in sync_tpls:
+            cmd = sync_tpl.format(
+                archive_root=archive_root,
+                name=name,
+                folder=folder,
             )
-            if result.returncode == 0:
-                logger.info(f"[同步] {name}/{folder} 完成。")
-            else:
-                logger.error(f"[同步] {name}/{folder} 失败 (exit {result.returncode}): {result.stderr.strip()}")
-        except subprocess.TimeoutExpired:
-            logger.error(f"[同步] {name}/{folder} 超时 (300s)。")
-        except Exception as e:
-            logger.error(f"[同步] {name}/{folder} 异常: {e}")
+            logger.info(f"[同步] {name}/{folder}: {cmd}")
+            try:
+                result = subprocess.run(
+                    cmd, shell=True, capture_output=True, text=True, timeout=300
+                )
+                if result.returncode == 0:
+                    logger.info(f"[同步] {name}/{folder} 完成。")
+                else:
+                    logger.error(f"[同步] {name}/{folder} 失败 (exit {result.returncode}): {result.stderr.strip()}")
+            except subprocess.TimeoutExpired:
+                logger.error(f"[同步] {name}/{folder} 超时 (300s)。")
+            except Exception as e:
+                logger.error(f"[同步] {name}/{folder} 异常: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -250,6 +253,14 @@ def main():
         logger.info("")  # 空行分隔
 
     logger.info(f"全部完成，共移动 {total_moved} 个文件。\n")
+
+    heartbeat_url = cfg.get("heartbeat_url")
+    if heartbeat_url:
+        try:
+            requests.get(heartbeat_url, timeout=10)
+            logger.info(f"[心跳] 请求成功: {heartbeat_url}")
+        except Exception as e:
+            logger.error(f"[心跳] 请求失败: {heartbeat_url} — {e}")
 
 
 if __name__ == "__main__":

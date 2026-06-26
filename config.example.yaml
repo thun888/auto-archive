@@ -9,9 +9,13 @@ groups:
   - name: "截图归档"
     source_folder: "D:\\截图归档\\raw"
     archive_root: "D:\\截图归档"
-    sync_command: "rclone copy {archive_root}/{folder} s3:/archive-bucket/{name}/{folder}"
+    sync_command:
+      - "rclone copy {archive_root}/{folder} s3:/archive-bucket/{name}/{folder}"
 
 # ---- 全局设置 ----
+
+# 全部任务正常完成后请求的心跳 URL（可选）
+# heartbeat_url: "https://hc-ping.com/your-uuid"
 
 # 文件夹命名格式（Python strftime 语法）
 folder_format: "%Y-%m"
