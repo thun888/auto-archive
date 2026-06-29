@@ -36,10 +36,14 @@ def load_config(config_path: str = "config.yaml") -> dict:
         sys.exit(1)
 
     for i, g in enumerate(cfg["groups"]):
-        for key in ("name", "source_folder", "archive_root"):
+        for key in ("name", "archive_root"):
             if key not in g:
                 logger.error(f"第 {i + 1} 组缺少必要字段: {key}")
                 sys.exit(1)
+        source_folder = g.get("source_folder")
+        if source_folder == "":
+            logger.error(f"第 {i + 1} 组 source_folder 为空字符串，请填写有效的源目录路径")
+            sys.exit(1)
 
     return cfg
 
@@ -111,14 +115,20 @@ def archive_group(group: dict, cfg: dict) -> int:
     执行单组归档任务，返回已移动的文件数。
     """
     name = group["name"]
-    src = Path(group["source_folder"]).resolve()
+    source_folder = group.get("source_folder")
     dst_root = Path(group["archive_root"]).resolve()
     folder_fmt = cfg.get("folder_format", "%Y-%m")
     recursive = cfg.get("scan_subfolders", False)
 
     logger.info(f"===== 开始处理: {name} =====")
-    logger.info(f"源目录: {src}")
     logger.info(f"归档根目录: {dst_root}")
+
+    if source_folder is None:
+        logger.info("未配置源目录，跳过移动阶段，直接同步。")
+        return 0
+
+    src = Path(source_folder).resolve()
+    logger.info(f"源目录: {src}")
 
     if not src.exists():
         logger.warning(f"源目录不存在，跳过: {src}")
